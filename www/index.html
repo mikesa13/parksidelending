@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta charset="utf-8" />
+
+		<title>Parkside Lending</title>
+
+		<!--REST API Proxies-->
+		<script src="js/Loans.js" type="text/javascript"></script>
+
+		<!--JQuery-->
+		<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+		<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+
+		<link href="css/main.css" rel="stylesheet" type="text/css" />
+
+		<script>
+		var LOAN_STATUS_PENDING = 0;
+		var LOAN_STATUS_APPROVED = 1;
+		var LOAN_STATUS_REJECTED = 2;
+
+		var loanStatus = { 0: "pending", 1: "approved", 2: "rejected"};
+
+		$(document).ready(
+				function()
+				{
+					InitNewLoanDialog();
+					InitLoanStatusDialog();
+				}
+				);
+
+		function ApplyForNewLoan()
+		{
+			$(document).load("newloan.html");
+		}
+
+		function CheckLoanStatus()
+		{
+			$(document).load("loanstatus.html");
+		}
+
+		// Main form handlers
+		function onApplyForNewLoanClicked()
+		{
+			OpenNewLoanDialog();
+		}
+
+		function onCheckLoanStatusClicked()
+		{
+			OpenLoanStatusDialog();
+		}
+
+		/*
+		// New loan form
+		*/
+
+		// Methods
+		function InitNewLoanDialog()
+		{
+			$("#dialog-applyforloan").dialog(
+					{
+						resizable: false,
+						dialogClass: "no-close",
+						autoOpen: false,
+						show: 'fade',
+						modal: true
+					}
+					);
+		}
+
+		function OpenNewLoanDialog()
+		{
+			$("#dialog-applyforloan").dialog("open");
+		}
+
+		function CloseNewLoanDialog()
+		{
+			// Clear any values that were entered so that the dialog will be clean next time it's opened
+			document.getElementById('ssn').value = "";
+			document.getElementById('propertyValue').value = "";
+			document.getElementById('loanAmount').value = "";
+
+			$("#dialog-applyforloan").dialog("close");
+		}
+
+		// Event handlers
+		function onSubmitNewLoanApplication()
+		{
+			var ssn = document.getElementById('ssn').value;
+			var propertyValue = document.getElementById('propertyValue').value;
+			var loanAmount = document.getElementById('loanAmount').value;
+
+			CreateLoan(
+					ssn,
+					propertyValue,
+					loanAmount,
+					function(result, resultString, data)
+					{
+						CloseNewLoanDialog();
+
+						if (result == "success")
+						{
+							switch (data.loanStatus)
+							{
+								case LOAN_STATUS_APPROVED:
+									alert("Congratulations! You're loan has been approved!  Your Loan ID is " + data.loanId);
+									break;
+								case LOAN_STATUS_REJECTED:
+									alert("Sorry! You're loan has been rejected!  Your Loan ID is " + data.loanId);
+									break;
+								case LOAN_STATUS_PENDING:
+									alert("You're loan is pending approval.  Your Loan ID is " + data.loanId);
+									break;
+								default:
+									alert("You're loan application has been submitted.  Your Loan ID is " + data.loanId);
+									break;
+							}
+						}
+						else
+						{
+							alert(resultString);
+						}
+					}
+					);
+		}
+
+		function onCancelNewLoanApplication()
+		{
+			CloseNewLoanDialog();
+		}
+
+		/*
+		// Check loan status form
+		*/
+
+		// Methods
+		function InitLoanStatusDialog()
+		{
+			$("#dialog-loanstatus").dialog(
+					{
+						resizable: false,
+						dialogClass: "no-close",
+						autoOpen: false,
+						show: 'fade',
+						modal: true
+					}
+					);
+		}
+
+		function OpenLoanStatusDialog()
+		{
+			$("#dialog-loanstatus").dialog("open");
+		}
+
+		function CloseLoanStatusDialog()
+		{
+			// Clear any values that were entered so that the dialog will be clean next time it's opened
+			document.getElementById('loanId').value = "";
+
+			$("#dialog-loanstatus").dialog("close");
+		}
+
+		// Event handlers
+		function onSubmitLoanStatus()
+		{
+			var loanId = document.getElementById('loanId').value;
+
+			GetLoanInfo(
+					loanId,
+					function(result, resultString, data)
+					{
+						CloseLoanStatusDialog();
+
+						if (result == "success")
+						{
+							alert("Your loan status is " + loanStatus[data.loanStatus]);
+						}
+						else
+						{
+							alert(resultString);
+						}
+					}
+					);
+		}
+
+		function onCancelLoanStatus()
+		{
+			CloseLoanStatusDialog();
+		}
+
+		</script>
+	</head>
+
+	<body>
+		<header>
+		</header>
+		<!-- main-page -->
+		<div id="main_page">
+			<div>Welcome to Parkside Lending</div>
+			<br/>
+			<fieldset>
+				<legend>What would you like to do?</legend>
+				<button id="action_createloan" onclick="onApplyForNewLoanClicked()">Apply for a new loan</button>
+				<button id="action_checkloanstatus" onclick="onCheckLoanStatusClicked()">Check the status of my loan</button>
+			</fieldset>
+		</div>
+
+		<footer>
+		</footer>
+
+	<!-- placeholder for ApplyForLoan dialog -->
+	<div class="applyforloan-overlay" id="dialog-applyforloan">
+		<div class="applyforloan-wrapper">
+			<div class="applyforloan-content">
+				<h2>New Loan Application</h2>
+				<br/>
+				<fieldset>
+					<label for="ssn">Social Security Number
+					<input type="text" name="ssn" id="ssn" placeholder="xxx-xxx-xxxx" required />
+					</label>
+					<br/>
+					<label for="propertyValue">Property Value
+					<input type="number" name="propertyValue" id="propertyValue" placeholder="Enter value in $" required />
+					</label>
+					<br/>
+					<label for="loanAmount">Loan Amount
+					<input type="number" name="loanAmount" id="loanAmount" placeholder="Enter amount in $" required />
+					</label>
+				</fieldset>
+				<button type="submit" onclick="onSubmitNewLoanApplication()">Apply</button>
+				<button onclick="onCancelNewLoanApplication()">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- placeholder for LoanStatus dialog -->
+	<div class="loanstatus-overlay" id="dialog-loanstatus">
+		<div class="loanstatus-wrapper">
+			<div class="loanstatus-content">
+				<h2>Check Loan Status</h2>
+				<br/>
+				<fieldset>
+					<label for="loanId">Loan ID
+					<input type="number" name="loanId" id="loanId" placeholder="enter loan id" required />
+					</label>
+				</fieldset>
+				<button type="submit" onclick="onSubmitLoanStatus()">Check Status</button>
+				<button onclick="onCancelLoanStatus()">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+	</body>
+</html>
